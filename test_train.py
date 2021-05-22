@@ -130,6 +130,9 @@ def main():
         raise NotImplementedError
 
     from torchviz import make_dot
+
+    # python test_train.py  -d "" --identifier baseline config/wireframe.yam
+
     x = torch.randn(1, 3, 128, 128)
     print(x.shape)
     y = model(x)
@@ -141,7 +144,7 @@ def main():
     print(type(y[1]), y[1].shape)
 
     d = make_dot(y[1], params=dict(model.named_parameters()))
-    d.render("figs/lcnn_torchviz", format="png")
+    # d.render("figs/lcnn_torchviz", format="png")
 
     exit()
     model = MultitaskLearner(model)

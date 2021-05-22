@@ -28,8 +28,10 @@ class Bottleneck2D(nn.Module):
         self.stride = stride
 
     def forward(self, x):
-        residual = x
+        residual = x # conv->bn->relu
+        print(f"Bottleneck2D input(x): {x.shape}")
 
+        # bn->relu->conv1
         out = self.bn1(x)
         out = self.relu(out)
         out = self.conv1(out)
@@ -46,6 +48,8 @@ class Bottleneck2D(nn.Module):
             residual = self.downsample(x)
 
         out += residual
+        
+        print(f"Bottleneck2D out: {out.shape}")        
 
         return out
 
@@ -86,9 +90,11 @@ class Hourglass(nn.Module):
         low3 = self.hg[n - 1][2](low2)
         up2 = F.interpolate(low3, scale_factor=2)
         out = up1 + up2
+        print(f'Hourglass output: {out.shape}')
         return out
 
     def forward(self, x):
+        print(f"Hourglass input {x.shape}")
         return self._hour_glass_forward(self.depth, x)
 
 
@@ -104,9 +110,9 @@ class HourglassNet(nn.Module):
         self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3)
         self.bn1 = nn.BatchNorm2d(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
-        self.layer1 = self._make_residual(block, self.inplanes, 1)
-        self.layer2 = self._make_residual(block, self.inplanes, 1)
-        self.layer3 = self._make_residual(block, self.num_feats, 1)
+        self.layer1 = self._make_residual(block, planes=self.inplanes, blocks=1)
+        self.layer2 = self._make_residual(block, planes=self.inplanes, blocks=1)
+        self.layer3 = self._make_residual(block, planes=self.num_feats, blocks=1)
         self.maxpool = nn.MaxPool2d(2, stride=2)
 
         # build hourglass modules
@@ -136,7 +142,14 @@ class HourglassNet(nn.Module):
 
     def _make_residual(self, block, planes, blocks, stride=1):
         downsample = None
+
+        print(f"stride: {stride}, self.inplanes: {self.inplanes}")
+        print(f"planes: {planes}, blocks.expansion: {block.expansion}")
+        print(f"planes * block.expansion: {planes*block.expansion}")
+
+
         if stride != 1 or self.inplanes != planes * block.expansion:
+            print("downsample is not None ...")
             downsample = nn.Sequential(
                 nn.Conv2d(
                     self.inplanes,
@@ -150,6 +163,7 @@ class HourglassNet(nn.Module):
         layers.append(block(self.inplanes, planes, stride, downsample))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
+            print("I'm in blocks  range ...")
             layers.append(block(self.inplanes, planes))
 
         return nn.Sequential(*layers)
@@ -162,6 +176,7 @@ class HourglassNet(nn.Module):
     def forward(self, x):
         out = []
         # out_vps = []
+        print(f"HourglassNet input {x.shape}")
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -185,6 +200,7 @@ class HourglassNet(nn.Module):
                 fc_ = self.fc_[i](y)
                 score_ = self.score_[i](score)
                 x = x + fc_ + score_
+        print(f'HourglassNet out: {len(out[::-1])}, y: {y.shape}')
 
         return out[::-1], y  # , out_vps[::-1]
 
@@ -193,9 +209,9 @@ def hg(**kwargs):
     model = HourglassNet(
         Bottleneck2D,
         head=kwargs.get("head", lambda c_in, c_out: nn.Conv2D(c_in, c_out, 1)),
-        depth=kwargs["depth"],
-        num_stacks=kwargs["num_stacks"],
-        num_blocks=kwargs["num_blocks"],
-        num_classes=kwargs["num_classes"],
+        depth=kwargs["depth"], # 4
+        num_stacks=kwargs["num_stacks"], # 2
+        num_blocks=kwargs["num_blocks"], # 1
+        num_classes=kwargs["num_classes"], # 5
     )
     return model
