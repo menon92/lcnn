@@ -88,30 +88,30 @@ def main():
     # 1. dataset
 
     # uncomment for debug DataLoader
-    # wireframe.datasets.WireframeDataset(datadir, split="train")[0]
+    # WireframeDataset(rootdir='data/wireframe_small_200', split="train")[0]
     # sys.exit(0)
 
-    # datadir = C.io.datadir
-    # kwargs = {
-    #     "collate_fn": collate,
-    #     "num_workers": C.io.num_workers if os.name != "nt" else 0,
-    #     "pin_memory": True,
-    # }
-    # train_loader = torch.utils.data.DataLoader(
-    #     WireframeDataset(datadir, split="train"),
-    #     shuffle=True,
-    #     batch_size=M.batch_size,
-    #     **kwargs,
-    # )
-    # val_loader = torch.utils.data.DataLoader(
-    #     WireframeDataset(datadir, split="valid"),
-    #     shuffle=False,
-    #     batch_size=M.batch_size_eval,
-    #     **kwargs,
-    # )
-    # epoch_size = len(train_loader)
-    # print("epoch_size (train):", epoch_size)
-    # print("epoch_size (valid):", len(val_loader))
+    datadir = C.io.datadir
+    kwargs = {
+        "collate_fn": collate,
+        "num_workers": C.io.num_workers if os.name != "nt" else 0,
+        "pin_memory": True,
+    }
+    train_loader = torch.utils.data.DataLoader(
+        WireframeDataset(datadir, split="train"),
+        shuffle=True,
+        batch_size=M.batch_size,
+        **kwargs,
+    )
+    val_loader = torch.utils.data.DataLoader(
+        WireframeDataset(datadir, split="valid"),
+        shuffle=False,
+        batch_size=M.batch_size_eval,
+        **kwargs,
+    )
+    epoch_size = len(train_loader)
+    print("epoch_size (train):", epoch_size)
+    print("epoch_size (valid):", len(val_loader))
 
     if resume_from:
         checkpoint = torch.load(osp.join(resume_from, "checkpoint_latest.pth"))
@@ -125,29 +125,36 @@ def main():
             num_blocks=M.num_blocks,
             num_classes=sum(sum(M.head_size, [])),
         )
-        print(model)
+        # print(model)
     else:
         raise NotImplementedError
 
-    from torchviz import make_dot
+    # from torchviz import make_dot
 
-    # python test_train.py  -d "" --identifier baseline config/wireframe.yam
+    # python test_train.py  -d "" --identifier baseline config/wireframe.yaml
 
-    x = torch.randn(1, 3, 128, 128)
-    print(x.shape)
-    y = model(x)
-    print('y', len(y), 'type', type(y))
-    print(type(y[0]), len(y[0]))
-    o1, o2 = y[0][0], y[0][1]
-    print(type(o1), type(o2))
-    print(o1.shape, o2.shape)
-    print(type(y[1]), y[1].shape)
+    # x = torch.randn(1, 3, 128, 128)
+    # print(x.shape)
+    # y = model(x)
+    # print('y', len(y), 'type', type(y))
+    # print(type(y[0]), len(y[0]))
+    # o1, o2 = y[0][0], y[0][1]
+    # print(type(o1), type(o2))
+    # print(o1.shape, o2.shape)
+    # print(type(y[1]), y[1].shape)
 
-    d = make_dot(y[1], params=dict(model.named_parameters()))
+    # d = make_dot(y[1], params=dict(model.named_parameters()))
     # d.render("figs/lcnn_torchviz", format="png")
 
-    exit()
+    # exit()
+    # print('model before add multitask model ...')
+    # print(model)
     model = MultitaskLearner(model)
+    # print("multitask learnar model ...")
+    # print(model)
+    # y = model(x)
+    # print('MTH y type', type(y))
+    # exit()
     model = LineVectorizer(model)
 
     if resume_from:
@@ -193,6 +200,7 @@ def main():
                 trainer.iteration -= trainer.iteration % epoch_size
             trainer.best_mean_loss = checkpoint["best_mean_loss"]
             del checkpoint
+        print("-" * 50, 'Training start ...')
         trainer.train()
     except BaseException:
         if len(glob.glob(f"{outdir}/viz/*")) <= 1:

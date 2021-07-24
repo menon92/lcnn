@@ -176,7 +176,7 @@ class HourglassNet(nn.Module):
     def forward(self, x):
         out = []
         # out_vps = []
-        print(f"HourglassNet input {x.shape}")
+        # print(f"HourglassNet input {x.shape}")
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -201,7 +201,8 @@ class HourglassNet(nn.Module):
                 score_ = self.score_[i](score)
                 x = x + fc_ + score_
         print(f'HourglassNet out: {len(out[::-1])}, y: {y.shape}')
-
+        
+        # outputs (out) list, feature (y)
         return out[::-1], y  # , out_vps[::-1]
 
 

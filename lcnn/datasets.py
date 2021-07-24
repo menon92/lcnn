@@ -17,6 +17,7 @@ from lcnn.config import M
 class WireframeDataset(Dataset):
     def __init__(self, rootdir, split):
         self.rootdir = rootdir
+        print(f"root dir:{rootdir}/{split}/")
         filelist = glob.glob(f"{rootdir}/{split}/*_label.npz")
         filelist.sort()
 
@@ -29,10 +30,13 @@ class WireframeDataset(Dataset):
 
     def __getitem__(self, idx):
         iname = self.filelist[idx][:-10].replace("_a0", "").replace("_a1", "") + ".png"
+        # take upto three channels
         image = io.imread(iname).astype(float)[:, :, :3]
         if "a1" in self.filelist[idx]:
+            print("a1 fond in file list")
             image = image[:, ::-1, :]
         image = (image - M.image.mean) / M.image.stddev
+        # convert image to channle first
         image = np.rollaxis(image, 2).copy()
 
         # npz["jmap"]: [J, H, W]    Junction heat map
@@ -51,6 +55,9 @@ class WireframeDataset(Dataset):
                 name: torch.from_numpy(npz[name]).float()
                 for name in ["jmap", "joff", "lmap"]
             }
+            print("Target ...")
+            for k, v in target.items():
+                print(f'{k}: {v.shape}')
             lpos = np.random.permutation(npz["lpos"])[: M.n_stc_posl]
             lneg = np.random.permutation(npz["lneg"])[: M.n_stc_negl]
             npos, nneg = len(lpos), len(lneg)
@@ -66,6 +73,9 @@ class WireframeDataset(Dataset):
                 lpre[:, :, 2],
             ]
             feat = np.concatenate(feat, 1)
+            print(f"feat dims: {feat.shape}")
+            print(f'byte of jtype {torch.from_numpy(npz["junc"][:, 2]).byte()}')
+            print(f'raw byte {npz["junc"][:, 2]}')
             meta = {
                 "junc": torch.from_numpy(npz["junc"][:, :2]),
                 "jtyp": torch.from_numpy(npz["junc"][:, 2]).byte(),
@@ -75,6 +85,8 @@ class WireframeDataset(Dataset):
                 "lpre_label": torch.cat([torch.ones(npos), torch.zeros(nneg)]),
                 "lpre_feat": torch.from_numpy(feat),
             }
+            for k, v in meta.items():
+                print(f'{k}: {v.shape}')
 
         return torch.from_numpy(image).float(), meta, target
 

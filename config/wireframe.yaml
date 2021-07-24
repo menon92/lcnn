@@ -1,6 +1,6 @@
 io:
   logdir: logs/
-  datadir: data/wireframe/
+  datadir: data/wireframe_small_200/
   resume_from:
   num_workers: 4
   tensorboard_port: 0
