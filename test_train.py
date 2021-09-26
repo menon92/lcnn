@@ -133,7 +133,7 @@ def main():
 
     # python test_train.py  -d "" --identifier baseline config/wireframe.yaml
 
-    # x = torch.randn(1, 3, 128, 128)
+    x = torch.randn(1, 3, 128, 128)
     # print(x.shape)
     # y = model(x)
     # print('y', len(y), 'type', type(y))
@@ -154,6 +154,7 @@ def main():
     # print(model)
     # y = model(x)
     # print('MTH y type', type(y))
+    # print('---')
     # exit()
     model = LineVectorizer(model)
 
